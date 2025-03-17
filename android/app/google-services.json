@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "804463104917",
+    "project_id": "taskone-13006",
+    "storage_bucket": "taskone-13006.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:804463104917:android:198052df24038ac99fdc9c",
+        "android_client_info": {
+          "package_name": "avs.com.taskone"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCh1ksr1x3ubPYdOIZZaRJx5ZpweoJ5EhA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
