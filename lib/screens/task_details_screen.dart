@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:taskone/models/task.dart';
 import 'package:taskone/providers/task_provider.dart';
+import 'package:taskone/screens/tasks/global_functions.dart';
 import 'package:taskone/screens/tasks/task_form_screen.dart';
 
 class TaskDetailsScreen extends StatelessWidget {
@@ -243,13 +244,14 @@ class TaskDetailsScreen extends StatelessWidget {
                       ),
                     ),
                     onPressed: () {
+                      showTaskFormBottomSheet(context, task: task);
                       // Navegar para a TaskFormScreen no modo de edição
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => TaskFormScreen(task: task),
-                        ),
-                      );
+                      // Navigator.push(
+                      //   context,
+                      //   MaterialPageRoute(
+                      //     builder: (context) => TaskFormScreen(task: task),
+                      //   ),
+                      // );
                     },
                     child: Text(
                       "Edit Task",

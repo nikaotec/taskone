@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:taskone/screens/calendar_screen.dart';
+import 'package:taskone/screens/schedule/schedule_screen.dart';
 import 'package:taskone/screens/task_list.dart';
 import 'package:taskone/screens/tasks/schedule_manage_task.dart';
 import 'package:taskone/screens/tasks/task_form_screen.dart';
@@ -17,10 +18,10 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
   final List<Widget> _screens = [
-    TaskList(), // Tela 1
-    ScheduleManageTask(), // Tela 2
-    TaskFormScreen(), // Tela 3
-    NotificationsScreen(), // Tela 4
+    ScheduleManageTask(), // Tela 1
+    TaskFormScreen(), // Tela 2
+    ScheduleScreen(), // Tela 3
+    AddScreen(), // Tela 4
     ProfileScreen(), // Tela 5
   ];
 

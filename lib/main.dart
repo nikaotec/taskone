@@ -1,3 +1,4 @@
+import 'package:calendar_view/calendar_view.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -23,7 +24,9 @@ void main() async {
         ChangeNotifierProvider(create: (_) => FilterProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()), 
       ],
-      child:  MyApp(isDarkMode: isDarkMode),
+      child: CalendarControllerProvider( 
+        controller: EventController(),
+        child: MyApp(isDarkMode: isDarkMode)),
     ),
   );
 }
