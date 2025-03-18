@@ -6,27 +6,36 @@ import '../models/task.dart';
 class TaskDetailsScreen extends StatelessWidget {
   final String taskId;
 
-  const TaskDetailsScreen({Key? key, required this.taskId}) : super(key: key);
+   TaskDetailsScreen({Key? key, required this.taskId}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context); // Obtendo o tema atual
+
     return Scaffold(
-      backgroundColor: Colors.black87,
+      backgroundColor:
+          theme.colorScheme.background, // Usando o tema para o fundo
       appBar: AppBar(
-        backgroundColor: Colors.black87,
-        title: const Text(
+        backgroundColor:
+            theme.colorScheme.surface, // Usando o tema para o AppBar
+        elevation: 0, // Remove a sombra do AppBar
+        title: Text(
           'Task Details',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(
+            color: theme.colorScheme.onSurface,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
+            icon: Icon(Icons.more_vert, color: theme.colorScheme.onSurface),
             onPressed: () {
-              // Refresh action
+              // Ações adicionais
             },
           ),
         ],
@@ -38,92 +47,194 @@ class TaskDetailsScreen extends StatelessWidget {
         ).getTaskById(taskId, context),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError || !snapshot.hasData) {
-            return const Center(
+            return Center(
               child: Text(
                 'Erro ao carregar tarefa',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: theme.colorScheme.onError),
               ),
             );
           }
 
           final task = snapshot.data!;
-          double progress =
-              task.isCompleted ? 1.0 : 0.6; // Exemplo de progresso
+          final double progress = _calculateProgress(
+            task,
+          ); // Calcula o progresso com base nas subtasks
 
-          return Padding(
+          return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Título da tarefa
                 Text(
                   task.title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    color: theme.colorScheme.onBackground,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
+
+                // Informações da tarefa (data, equipe e progresso)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _infoBox(Icons.calendar_today, "Due Date", "20 June"),
-                    _infoBox(Icons.people, "Project Team", ""),
+                    // Data da tarefa
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_today,
+                              color: theme.colorScheme.primary,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${task.dueDate?.day}/${task.dueDate?.month}/${task.dueDate?.year}',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            if (task.dueTime != null) ...[
+                              const SizedBox(width: 8),
+                              Text(
+                                '${task.dueTime!.hour}:${task.dueTime!.minute}',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "Project Progress",
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // Equipe da tarefa e progresso
+                    Column(
+                      children: [
+                        // Equipe da tarefa
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.people,
+                              color: theme.colorScheme.primary,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            // Exibindo os avatares dos contribuidores
+                            ...task.subtasks
+                                .expand((subtask) => subtask.contributors)
+                                .map((contributor) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(left: 4.0),
+                                    child: CircleAvatar(
+                                      backgroundImage: NetworkImage(
+                                        contributor['avatarUrl'] ?? '',
+                                      ),
+                                      radius: 12,
+                                    ),
+                                  );
+                                })
+                                .toList(),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        // Progresso da tarefa
+                        _progressIndicator(progress, theme),
+                      ],
+                    ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                const Text(
+                const SizedBox(height: 24),
+
+                // Detalhes do projeto
+                Text(
                   "Project Details",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    color: theme.colorScheme.onBackground,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   task.description,
-                  style: const TextStyle(color: Colors.white70),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
-                const SizedBox(height: 16),
-                _progressIndicator(progress),
-                const SizedBox(height: 16),
-                const Text(
-                  "All Tasks",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
+                const SizedBox(height: 24),
+
+                // Categoria da tarefa
+                DropdownButtonFormField<String>(
+                  value: task.category,
+                  items:
+                      ['Todos', 'Design', 'Desenvolvimento', 'Marketing'].map((
+                        String category,
+                      ) {
+                        return DropdownMenuItem<String>(
+                          value: category,
+                          child: Text(category),
+                        );
+                      }).toList(),
+                  onChanged: (value) {
+                    // Atualizar a categoria da tarefa
+                    task.category = value;
+                    Provider.of<TaskProvider>(
+                      context,
+                      listen: false,
+                    ).updateTask(task, context);
+                  },
+                  decoration: InputDecoration(
+                    labelText: 'Categoria',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Lista de subtasks
+                Text(
+                  "Subtasks",
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    color: theme.colorScheme.onBackground,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 8),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: task.subtasks.length,
-                    itemBuilder: (context, index) {
-                      return _taskItem(
-                        task.subtasks[index].title,
-                        task.subtasks[index].isCompleted,
-                      );
-                    },
-                  ),
-                ),
+                ...task.subtasks.map((subtask) {
+                  return _taskItem(subtask, task, context, theme);
+                }).toList(),
                 const SizedBox(height: 16),
+
+                // Botão para adicionar subtask
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.amber,
+                      backgroundColor: theme.colorScheme.primary,
                       padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    onPressed: () {},
-                    child: const Text(
-                      "Add Task",
+                    onPressed: () => _addSubtask(context, task),
+                    child: Text(
+                      "Add Subtask",
                       style: TextStyle(
-                        color: Colors.black,
+                        color: theme.colorScheme.onPrimary,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -138,74 +249,208 @@ class TaskDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _infoBox(IconData icon, String title, String value) {
-    return Column(
-      children: [
-        Icon(icon, color: Colors.amber, size: 28),
-        const SizedBox(height: 4),
-        Text(
-          title,
-          style: const TextStyle(color: Colors.white70, fontSize: 12),
-        ),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
-    );
+  // Função para calcular o progresso com base nas subtasks
+  double _calculateProgress(Task task) {
+    if (task.subtasks.isEmpty) {
+      return task.isCompleted
+          ? 1.0
+          : 0.0; // Progresso baseado na tarefa principal
+    } else {
+      final completedSubtasks =
+          task.subtasks.where((subtask) => subtask.isCompleted).length;
+      return completedSubtasks / task.subtasks.length;
+    }
   }
 
-  Widget _progressIndicator(double progress) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  // Widget para o indicador de progresso
+  Widget _progressIndicator(double progress, ThemeData theme) {
+    return Stack(
+      alignment: Alignment.center,
       children: [
-        const Text(
-          "Project Progress",
+        SizedBox(
+          height: 60,
+          width: 60,
+          child: CircularProgressIndicator(
+            value: progress,
+            backgroundColor: theme.colorScheme.surfaceVariant,
+            valueColor: AlwaysStoppedAnimation<Color>(
+              theme.colorScheme.primary,
+            ),
+            strokeWidth: 6,
+          ),
+        ),
+        Text(
+          "${(progress * 100).toInt()}%",
           style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
+            color: theme.colorScheme.onBackground,
             fontWeight: FontWeight.bold,
           ),
-        ),
-        const SizedBox(height: 8),
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            SizedBox(
-              height: 60,
-              width: 60,
-              child: CircularProgressIndicator(
-                value: progress,
-                backgroundColor: Colors.white24,
-                valueColor: const AlwaysStoppedAnimation<Color>(Colors.amber),
-                strokeWidth: 6,
-              ),
-            ),
-            Text(
-              "${(progress * 100).toInt()}%",
-              style: const TextStyle(color: Colors.white, fontSize: 16),
-            ),
-          ],
         ),
       ],
     );
   }
 
-  Widget _taskItem(String title, bool isCompleted) {
+  // Widget para cada item da subtask
+  Widget _taskItem(
+    Subtask subtask,
+    Task task,
+    BuildContext context,
+    ThemeData theme,
+  ) {
     return Card(
-      color: Colors.grey[800],
-      margin: const EdgeInsets.symmetric(vertical: 4),
+      color: theme.colorScheme.surface,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 2,
       child: ListTile(
-        title: Text(title, style: const TextStyle(color: Colors.white)),
-        trailing: Icon(
-          isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
-          color: Colors.amber,
+        leading: Checkbox(
+          value: subtask.isCompleted,
+          onChanged: (value) {
+            subtask.isCompleted = value ?? false;
+            _updateTaskCompletion(
+              task,
+              context,
+            ); // Atualiza o status da tarefa principal
+          },
+        ),
+        title: Text(
+          subtask.title,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Exibindo os avatares dos contribuidores
+            ...subtask.contributors.map((contributor) {
+              return Padding(
+                padding: const EdgeInsets.only(left: 4.0),
+                child: CircleAvatar(
+                  backgroundImage: NetworkImage(contributor['avatarUrl'] ?? ''),
+                  radius: 12,
+                ),
+              );
+            }).toList(),
+          ],
         ),
       ),
     );
   }
+
+  // Função para atualizar o status da tarefa principal
+  void _updateTaskCompletion(Task task, BuildContext context) {
+    if (task.subtasks.isNotEmpty) {
+      // Marca a tarefa como concluída se todas as subtasks estiverem concluídas
+      task.isCompleted = task.subtasks.every((subtask) => subtask.isCompleted);
+    }
+    Provider.of<TaskProvider>(context, listen: false).updateTask(task, context);
+  }
+
+  // Função para adicionar uma nova subtask
+  void _addSubtask(BuildContext context, Task task) {
+    final theme = Theme.of(context); // Obtendo o tema atual
+    final TextEditingController _subtaskController = TextEditingController();
+    final List<Map<String, String>> _selectedUsers = [];
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text(
+              'Add Subtask',
+              style: TextStyle(color: theme.colorScheme.onSurface),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: _subtaskController,
+                  decoration: InputDecoration(
+                    hintText: 'Subtask title',
+                    hintStyle: TextStyle(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Aqui você pode adicionar um seletor de usuários (pode ser um dropdown ou uma lista de checkboxes)
+                // Exemplo simplificado:
+                Text(
+                  'Select users:',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                ..._dummyUsers.map((user) {
+                  return CheckboxListTile(
+                    title: Text(user['name'] ?? ''),
+                    value: _selectedUsers.contains(user),
+                    onChanged: (value) {
+                      if (value == true) {
+                        _selectedUsers.add(user);
+                      } else {
+                        _selectedUsers.remove(user);
+                      }
+                    },
+                  );
+                }).toList(),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  if (_subtaskController.text.isNotEmpty) {
+                    final newSubtask = Subtask(
+                      id: DateTime.now().toString(),
+                      title: _subtaskController.text,
+                      contributors: _selectedUsers,
+                    );
+                    task.subtasks.add(newSubtask);
+                    _updateTaskCompletion(
+                      task,
+                      context,
+                    ); // Atualiza o status da tarefa principal
+                    Navigator.pop(context);
+                  }
+                },
+                child: Text(
+                  'Add',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+    );
+  }
+
+  // Lista de usuários fictícia (substitua por uma lista real de usuários)
+  final List<Map<String, String>> _dummyUsers = [
+    {
+      'userId': '1',
+      'name': 'User 1',
+      'avatarUrl': 'https://via.placeholder.com/150',
+    },
+    {
+      'userId': '2',
+      'name': 'User 2',
+      'avatarUrl': 'https://via.placeholder.com/150',
+    },
+    {
+      'userId': '3',
+      'name': 'User 3',
+      'avatarUrl': 'https://via.placeholder.com/150',
+    },
+  ];
 }

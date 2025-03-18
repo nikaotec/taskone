@@ -1,0 +1,17 @@
+{
+    "version": 8,
+    "configurePresets": [
+        {
+            "name": "Configurar a predefinição usando o arquivo de cadeia de ferramentas",
+            "displayName": "Configurar a predefinição usando o arquivo de cadeia de ferramentas",
+            "description": "Define o gerador Ninja, compilar e instalar o diretório",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_TOOLCHAIN_FILE": "",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}"
+            }
+        }
+    ]
+}

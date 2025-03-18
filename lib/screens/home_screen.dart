@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:taskone/screens/calendar_screen.dart';
 import 'package:taskone/screens/task_list.dart';
 import 'package:taskone/screens/tasks/schedule_manage_task.dart';
+import 'package:taskone/screens/tasks/task_form_screen.dart';
 import 'package:taskone/widgets/custon_botton_bar.dart';
 import '../themes/color_scheme.dart'; // Importe o esquema de cores
 
@@ -18,7 +19,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<Widget> _screens = [
     TaskList(), // Tela 1
     ScheduleManageTask(), // Tela 2
-    AddScreen(), // Tela 3
+    TaskFormScreen(), // Tela 3
     NotificationsScreen(), // Tela 4
     ProfileScreen(), // Tela 5
   ];

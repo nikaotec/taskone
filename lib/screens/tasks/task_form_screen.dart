@@ -25,6 +25,8 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
   TimeOfDay? _dueTime;
   List<String> _shared = [];
   List<Subtask> _subtasks = [];
+  String? _category;
+  int _progress = 0;
   final TextEditingController _subtaskController = TextEditingController();
   bool _isLoading = false;
 
@@ -44,6 +46,8 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
       _dueTime = widget.task!.dueTime;
       _shared = widget.task!.shared;
       _subtasks = List.from(widget.task!.subtasks);
+      _category = widget.task!.category;
+      _progress = widget.task!.progress;
     } else {
       _title = '';
       _isCompleted = false;
@@ -53,6 +57,8 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
       _dueTime = null;
       _shared = [];
       _subtasks = [];
+      _category = 'Todos';
+      _progress = 0;
     }
   }
 
@@ -62,18 +68,67 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     super.dispose();
   }
 
-  void _addSubtask() {
+  void _addSubtask() async {
     if (_subtaskController.text.isNotEmpty) {
+      // Abre um diálogo para selecionar usuários
+      final List<Map<String, String>> selectedUsers =
+          await _showUserSelectionDialog();
+
       setState(() {
         _subtasks.add(
           Subtask(
             id: DateTime.now().toString(),
             title: _subtaskController.text,
+            contributors: selectedUsers,
           ),
         );
         _subtaskController.clear();
       });
     }
+  }
+
+  Future<List<Map<String, String>>> _showUserSelectionDialog() async {
+    final List<Map<String, String>> selectedUsers = [];
+
+    await showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Selecionar Usuários'),
+            content: SingleChildScrollView(
+              child: Column(
+                children: [
+                  // Lista de usuários fictícia (substitua por uma lista real de usuários)
+                  ..._dummyUsers.map((user) {
+                    return CheckboxListTile(
+                      title: Text(user['name'] ?? ''),
+                      value: selectedUsers.contains(user),
+                      onChanged: (value) {
+                        if (value == true) {
+                          selectedUsers.add(user);
+                        } else {
+                          selectedUsers.remove(user);
+                        }
+                      },
+                    );
+                  }).toList(),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Cancelar'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, selectedUsers),
+                child: Text('Confirmar'),
+              ),
+            ],
+          ),
+    );
+
+    return selectedUsers;
   }
 
   Future<void> _saveTask() async {
@@ -93,6 +148,8 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
           dueTime: _dueTime,
           shared: _shared,
           subtasks: _subtasks,
+          category: _category,
+          progress: _progress,
         );
 
         final taskProvider = Provider.of<TaskProvider>(context, listen: false);
@@ -166,20 +223,15 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
         return true;
       },
       child: Scaffold(
-        backgroundColor:
-            Theme.of(
-              context,
-            ).colorScheme.background, // Usa a cor de fundo do tema
+        backgroundColor: Theme.of(context).colorScheme.background,
         appBar: AppBar(
           title:
               Text(
                 widget.task == null ? 'Create New Task' : 'Edit Task',
               ).animate().fadeIn().slideX(),
           elevation: 0,
-          backgroundColor:
-              Theme.of(context).colorScheme.surface, // Usa a cor de superfície
-          foregroundColor:
-              Theme.of(context).colorScheme.onSurface, // Usa a cor do texto
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          foregroundColor: Theme.of(context).colorScheme.onSurface,
           leading: IconButton(
             icon: Icon(Icons.close),
             onPressed: () async {
@@ -227,6 +279,67 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                   ).animate().fadeIn().slideX(),
                   SizedBox(height: 16),
 
+                  // Time & Date (lado a lado)
+                  Text(
+                    'Time & Date',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onBackground,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Row(
+                    children: [
+                      // Select Date
+                      Expanded(
+                        child: ListTile(
+                          title: Text(
+                            _dueDate == null
+                                ? 'Select date'
+                                : DateFormat('dd/MM/yyyy').format(_dueDate!),
+                          ),
+                          leading: Icon(Icons.calendar_today),
+                          trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                          onTap: () async {
+                            final date = await showDatePicker(
+                              context: context,
+                              initialDate: _dueDate ?? DateTime.now(),
+                              firstDate: DateTime.now(),
+                              lastDate: DateTime(2100),
+                            );
+                            if (date != null) {
+                              setState(() => _dueDate = date);
+                            }
+                          },
+                        ),
+                      ),
+                      SizedBox(width: 16),
+                      // Select Time
+                      Expanded(
+                        child: ListTile(
+                          title: Text(
+                            _dueTime == null
+                                ? 'Select time'
+                                : '${_dueTime!.hour.toString().padLeft(2, '0')}:${_dueTime!.minute.toString().padLeft(2, '0')}',
+                          ),
+                          leading: Icon(Icons.access_time),
+                          trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                          onTap: () async {
+                            final time = await showTimePicker(
+                              context: context,
+                              initialTime: _dueTime ?? TimeOfDay.now(),
+                            );
+                            if (time != null) {
+                              setState(() => _dueTime = time);
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 16),
+
                   // Task Details
                   Text(
                     'Task Details',
@@ -252,46 +365,106 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                   ).animate().fadeIn().slideX(delay: 100.ms),
                   SizedBox(height: 16),
 
-                  // Add team members
-                  Text(
-                    'Add team members',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onBackground,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  ..._shared
-                      .map(
-                        (member) => CheckboxListTile(
-                          title: Text(member),
-                          value: true,
-                          onChanged: (value) {
-                            setState(() {
-                              _shared.remove(member);
-                            });
-                          },
+                  // Priority and Category (lado a lado)
+                  Row(
+                    children: [
+                      // Priority
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Priority',
+                              style: TextStyle(
+                                color:
+                                    Theme.of(context).colorScheme.onBackground,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            DropdownButtonFormField<String>(
+                              value: _priority,
+                              items:
+                                  ['low', 'medium', 'high'].map((
+                                    String priority,
+                                  ) {
+                                    return DropdownMenuItem<String>(
+                                      value: priority,
+                                      child: Text(priority),
+                                    );
+                                  }).toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  _priority = value!;
+                                });
+                              },
+                              decoration: InputDecoration(
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                filled: true,
+                                fillColor:
+                                    Theme.of(context).colorScheme.surface,
+                              ),
+                            ),
+                          ],
                         ),
-                      )
-                      .toList(),
-                  SizedBox(height: 8),
-                  TextButton(
-                    onPressed: () {
-                      // TODO: Implement add team member functionality
-                    },
-                    child: Text(
-                      'Add New',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.primary,
                       ),
-                    ),
+                      SizedBox(width: 16),
+                      // Category
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Category',
+                              style: TextStyle(
+                                color:
+                                    Theme.of(context).colorScheme.onBackground,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            DropdownButtonFormField<String>(
+                              value: _category,
+                              items:
+                                  [
+                                    'Todos',
+                                    'Design',
+                                    'Desenvolvimento',
+                                    'Marketing',
+                                  ].map((String category) {
+                                    return DropdownMenuItem<String>(
+                                      value: category,
+                                      child: Text(category),
+                                    );
+                                  }).toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  _category = value!;
+                                });
+                              },
+                              decoration: InputDecoration(
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                filled: true,
+                                fillColor:
+                                    Theme.of(context).colorScheme.surface,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                   SizedBox(height: 16),
 
-                  // Time & Date
+                  // Subtasks
                   Text(
-                    'Time & Date',
+                    'Subtasks',
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.onBackground,
                       fontSize: 18,
@@ -299,45 +472,55 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                     ),
                   ),
                   SizedBox(height: 8),
-                  ListTile(
-                    title: Text(
-                      _dueDate == null
-                          ? 'Select date'
-                          : DateFormat('dd/MM/yyyy').format(_dueDate!),
-                    ),
-                    leading: Icon(Icons.calendar_today),
-                    trailing: Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () async {
-                      final date = await showDatePicker(
-                        context: context,
-                        initialDate: _dueDate ?? DateTime.now(),
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime(2100),
-                      );
-                      if (date != null) {
-                        setState(() => _dueDate = date);
-                      }
-                    },
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _subtaskController,
+                          decoration: InputDecoration(
+                            hintText: 'Enter subtask title',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            filled: true,
+                            fillColor: Theme.of(context).colorScheme.surface,
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      IconButton(icon: Icon(Icons.add), onPressed: _addSubtask),
+                    ],
                   ),
-                  ListTile(
-                    title: Text(
-                      _dueTime == null
-                          ? 'Select time'
-                          : '${_dueTime!.hour.toString().padLeft(2, '0')}:${_dueTime!.minute.toString().padLeft(2, '0')}',
-                    ),
-                    leading: Icon(Icons.access_time),
-                    trailing: Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () async {
-                      final time = await showTimePicker(
-                        context: context,
-                        initialTime: _dueTime ?? TimeOfDay.now(),
-                      );
-                      if (time != null) {
-                        setState(() => _dueTime = time);
-                      }
-                    },
-                  ),
-                  SizedBox(height: 24),
+                  SizedBox(height: 8),
+                  ..._subtasks.map((subtask) {
+                    return ListTile(
+                      title: Text(subtask.title),
+                      subtitle: Row(
+                        children: [
+                          ...subtask.contributors.map((user) {
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 4.0),
+                              child: CircleAvatar(
+                                backgroundImage: NetworkImage(
+                                  user['avatarUrl'] ?? '',
+                                ),
+                                radius: 12,
+                              ),
+                            );
+                          }).toList(),
+                        ],
+                      ),
+                      trailing: IconButton(
+                        icon: Icon(Icons.delete),
+                        onPressed: () {
+                          setState(() {
+                            _subtasks.remove(subtask);
+                          });
+                        },
+                      ),
+                    );
+                  }).toList(),
+                  SizedBox(height: 16),
 
                   // Create Button
                   ElevatedButton(
@@ -347,10 +530,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      backgroundColor:
-                          Theme.of(
-                            context,
-                          ).colorScheme.secondary, // Usa a cor secundária
+                      backgroundColor: Theme.of(context).colorScheme.secondary,
                     ),
                     child:
                         _isLoading
@@ -374,4 +554,23 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
       ),
     );
   }
+
+  // Lista de usuários fictícia (substitua por uma lista real de usuários)
+  final List<Map<String, String>> _dummyUsers = [
+    {
+      'userId': '1',
+      'name': 'User 1',
+      'avatarUrl': 'https://via.placeholder.com/150',
+    },
+    {
+      'userId': '2',
+      'name': 'User 2',
+      'avatarUrl': 'https://via.placeholder.com/150',
+    },
+    {
+      'userId': '3',
+      'name': 'User 3',
+      'avatarUrl': 'https://via.placeholder.com/150',
+    },
+  ];
 }
