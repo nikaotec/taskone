@@ -36,6 +36,7 @@ class ScheduleScreen extends StatelessWidget {
           // Exibe a visualização semanal
           Expanded(
             child: WeekView(
+              keepScrollOffset: true,
               controller: calendarController,
               eventTileBuilder: (date, events, boundary, start, end) {
                 // Filtra as tarefas para a data e horário atuais
@@ -58,13 +59,20 @@ class ScheduleScreen extends StatelessWidget {
                           return taskDateTime.isAtSameMomentAs(date);
                         })
                         .toList();
-              
-                return _buildEventTile(date, tasksForDate, theme);
+                
+                // Converte as tarefas em CalendarEventData
+                final events = tasksForDate.map((task) => CalendarEventData(
+                  date: DateTime(task.dueDate!.year, task.dueDate!.month, task.dueDate!.day, task.dueTime!.hour, task.dueTime!.minute),
+                  event: task,
+                  title: task.title,
+                )).toList();
+
+                return _buildEventTile(date, events, theme);
               },
-              onEventTap: (date, events) {
+              onEventTap: (events, date) {
                 // Ao clicar em um evento, exibe as tarefas do dia
-                _showTasksForDate(context, date, taskProvider, theme);
-              },
+                _showTasksForDate(context, date, events, taskProvider, theme);},
+
               // Aplica o tema ao WeekView
               weekDayBuilder: (day) {
                 return Container(
@@ -114,7 +122,7 @@ class ScheduleScreen extends StatelessWidget {
   }
 
   // Constrói um tile de evento para o WeekView
-  Widget _buildEventTile(DateTime date, List<Task> tasks, ThemeData theme) {
+  Widget _buildEventTile(DateTime date, List<CalendarEventData<Object?>> events, ThemeData theme) {
     return Container(
       margin: EdgeInsets.all(4),
       padding: EdgeInsets.all(8),
@@ -138,8 +146,9 @@ class ScheduleScreen extends StatelessWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-          if (tasks.isNotEmpty)
-            ...tasks.map((task) {
+          if (events.isNotEmpty)
+            ...events.map((event) {
+              final task = event.event as Task;
               return ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(
@@ -169,10 +178,10 @@ class ScheduleScreen extends StatelessWidget {
     TaskProvider taskProvider,
     ThemeData theme,
   ) {
-    final tasksForDate = events
-        .map((event) => event.event as Task)
-        .toList();
-
+    final tasksForDate = events.map((event) => event.event as Task).toList();
+    
+    
+    
     showModalBottomSheet(
       context: context,
       backgroundColor: theme.colorScheme.surface,
